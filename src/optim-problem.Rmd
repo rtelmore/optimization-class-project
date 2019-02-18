@@ -1,0 +1,50 @@
+---
+title: "Optimization Project: INFO 2020"
+author: "Ryan Elmore"
+date: "2/17/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(janitor)
+library(lpSolve)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r data}
+date_string <- "040219"
+
+## Note salaries are in 1.5
+df <- read_csv(paste("data/DKSalaries-",
+                        date_string,
+                        ".csv",
+                        sep = "")) %>%
+  clean_names() %>%
+  filter(roster_position == "CPT") %>%
+  separate(game_info, into = c("away", "rest"), sep = "@") %>%
+  mutate(home = if_else(away == team_abbrev, 0, 1),
+         salary = salary/1.5) %>%
+  separate(position, c("p1", "p2"))
+```
+
+```{r}
+obj <- df$avg_points_per_game
+tm_mat <- t(model.matrix(~ team_abbrev + 0, df))
+player_mat <- t(model.matrix(~ name + 0, df))
+con <- rbind(rep(1, nrow(df)),
+             df$salary,
+             tm_mat,
+             # rep(df$home, 2),
+             # rep(df$is.starter, 2),
+             player_mat)
+
+dir <- c("=", "<=", rep("<=", 2), rep("<=", nrow(df)))
+rhs <- c(6, 50000, rep(5, 2), rep(1, nrow(df)))
+result <- lp("max", obj, con, dir, rhs, all.bin = TRUE)
+df[result$solution == 1, ]
+```
+
+#rhs <- c(1, 5, 50000, rep(5, 2), nHome, nStarter, rep(1, nrow(df)))
+
