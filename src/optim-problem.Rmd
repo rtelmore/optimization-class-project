@@ -12,6 +12,7 @@ library(janitor)
 library(lpSolve)
 knitr::opts_chunk$set(echo = TRUE)
 options(scipen=999)
+set.seed(10982)
 ```
 
 ## Instructions
@@ -31,20 +32,16 @@ players in order to maximize the expected points that they will earn during
 this game. Each part of the problem is subject to a unique set of 
 constraints. The general problem is a variant of a fantasy sports problem. 
 
-Each successive problem must satisfy the following contraints, in addition to
-the constraints set out in each part of the project. 
+### Problem 1
+Find the optimal set of six players in order to maximize expected points 
+subject to the following constraints.
 
 * Your "team" of six players may not exceed more than \$50,000 in total 
 salary. 
 * You must have at least one player from each team, *i.e.* at least one 
 player from the Lakers and at least one from the Nuggets. 
 
-### Problem 1
-Find the optimal set of six players in order to maximize expected points 
-subject to the salary constraint mentioned above. 
-
 ```{r data, include = FALSE}
-set.seed(10982)
 date_string <- "251018"
 df <- read_csv(paste("../data/DKSalaries-",
                         date_string,
@@ -93,10 +90,10 @@ opt_team$name
 
 ### Problem 2
 
-Suppose we want at least five Lakers on our proposed team of six players. What
-is the optimial team in terms of maximizing expected points? 
+Suppose we want at least five Lakers on our proposed team of six players. Use 
+this constraint in addition to the constraints in Problem 1. 
 
-```{r}
+```{r, include = F}
 obj <- df$expected_points
 tm_mat <- t(model.matrix(~ team + 0, df))
 player_mat <- t(model.matrix(~ name + 0, df))
@@ -111,17 +108,17 @@ con <- rbind(rep(1, nrow(df)),
 dir <- c("=", "<=", rep("<=", 2), ">=", rep("<=", nrow(df)))
 rhs <- c(6, 50000, rep(5, 2), 5, rep(1, nrow(df)))
 result <- lp("max", obj, con, dir, rhs, all.bin = TRUE)
-opt_team <- df[result$solution == 1, ]
-opt_salary <- sum(opt_team$salary)
+opt_team_2 <- df[result$solution == 1, ]
+opt_salary_2 <- sum(opt_team_2$salary)
 ```
 
 The expected points for original optimal lineup is `r result$objval`. 
 
-We used `r opt_salary` of the 50000 in salary for this lineup. 
+We used `r opt_salary_2` of the 50000 in salary for this lineup. 
 
 The team consists of the following players:
 ```{r}
-opt_team$name
+opt_team_2$name
 ```
 
 ### Problem 3
@@ -130,7 +127,7 @@ On the other hand, the Nuggets are a better team. Remove the constraint from
 part 2 and add a constraint saying that you want at least four players from 
 the Nuggets. What is the optimial team in terms of maximizing expected points?
 
-```{r}
+```{r, include = F}
 obj <- df$expected_points
 tm_mat <- t(model.matrix(~ team + 0, df))
 player_mat <- t(model.matrix(~ name + 0, df))
@@ -138,58 +135,61 @@ con <- rbind(rep(1, nrow(df)),
              df$salary,
              tm_mat,
              df$team == "DEN",
-             # rep(df$home, 2),
-             # rep(df$is.starter, 2),
              player_mat)
 
 dir <- c("=", "<=", rep("<=", 2), ">=", rep("<=", nrow(df)))
 rhs <- c(6, 50000, rep(5, 2), 4, rep(1, nrow(df)))
 result <- lp("max", obj, con, dir, rhs, all.bin = TRUE)
-opt_team <- df[result$solution == 1, ]
-opt_salary <- sum(opt_team$salary)
+opt_team_3 <- df[result$solution == 1, ]
+opt_salary_3 <- sum(opt_team_3$salary)
 ```
 
 The expected points for original optimal lineup is `r result$objval`. 
 
-We used `r opt_salary` of the 50000 in salary for this lineup. 
+We used `r opt_salary_3` of the 50000 in salary for this lineup. 
 
 The team consists of the following players:
 ```{r}
-opt_team$name
+opt_team_3$name
 ```
 
 
 ### Problem 4
 
-On the other hand, the Nuggets are a better team. Remove the constraint from
-part 2 and add a constraint saying that you want at least four players from 
-the Nuggets. What is the optimial team in terms of maximizing expected points?
+Suppose that we want at least one player from each of the five positions: PG, 
+SG, SF, PF, and C. Remove the constraints from Problems 2 and 3 and find the 
+optimal team in terms of maximizing expected points.
 
-```{r}
+```{r, include = F}
 obj <- df$expected_points
 tm_mat <- t(model.matrix(~ team + 0, df))
 player_mat <- t(model.matrix(~ name + 0, df))
 con <- rbind(rep(1, nrow(df)),
              df$salary,
              tm_mat,
-             df$team == "DEN",
-             # rep(df$home, 2),
-             # rep(df$is.starter, 2),
-             player_mat)
+             player_mat,
+             df$position == "PG",
+             df$position == "SG",
+             df$position == "SF",
+             df$position == "PF",
+             df$position == "C")
 
-dir <- c("=", "<=", rep("<=", 2), ">=", rep("<=", nrow(df)))
-rhs <- c(6, 50000, rep(5, 2), 4, rep(1, nrow(df)))
+dir <- c("=", "<=", rep("<=", 2), rep("<=", nrow(df)), rep(">=", 5))
+rhs <- c(6, 50000, rep(5, 2), rep(1, nrow(df)), rep(1, 5))
 result <- lp("max", obj, con, dir, rhs, all.bin = TRUE)
-opt_team <- df[result$solution == 1, ]
-opt_salary <- sum(opt_team$salary)
+opt_team_4 <- df[result$solution == 1, ]
+opt_salary_4 <- sum(opt_team_4$salary)
 ```
 
 The expected points for original optimal lineup is `r result$objval`. 
 
-We used `r opt_salary` of the 50000 in salary for this lineup. 
+We used `r opt_salary_4` of the 50000 in salary for this lineup. 
 
 The team consists of the following players:
 ```{r}
-opt_team$name
+opt_team_4$name
 ```
 
+### Problem 5
+
+Which team would you choose and why? 
