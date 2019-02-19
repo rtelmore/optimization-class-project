@@ -43,7 +43,7 @@ player from the Lakers and at least one from the Nuggets.
 
 ```{r data, include = FALSE}
 date_string <- "251018"
-df <- read_csv(paste("../data/DKSalaries-",
+df <- read_csv(paste("DKSalaries-",
                         date_string,
                         ".csv",
                         sep = "")) %>%
